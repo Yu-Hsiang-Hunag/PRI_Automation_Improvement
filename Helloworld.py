@@ -12,9 +12,9 @@ from unidiff import PatchSet # module for getting diff file information
 #     raise ImportError
 
 # custom libraries #
-from common import excel
+# from common import excel
 from common import oempri
-from common import common
+# from common import common
 
 print("Import Success")
 print("Hello World")
