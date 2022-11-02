@@ -26,7 +26,7 @@ try:
 except:
     print("common folder or oempri is not exsiting")
 try:
-    from common import common
+    import common.common
 except:
     print("common folder or common is not exsiting")
 
@@ -34,9 +34,9 @@ try:
     import pandas
 except:
     print("Please install pandas")
+
 # custom libraries #
 # from common import excel
-from common import oempri
 # from common import common
 
 SCRIPT_REAL_PATH = os.path.dirname(os.path.realpath(__file__))
