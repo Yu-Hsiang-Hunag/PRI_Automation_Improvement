@@ -23,9 +23,12 @@ except:
 
 try:
     from common import oempri
-    from common import common
 except:
     print("common folder or oempri is not exsiting")
+try:
+    from common import common
+except:
+    print("common folder or common is not exsiting")
 
 try:
     import pandas
