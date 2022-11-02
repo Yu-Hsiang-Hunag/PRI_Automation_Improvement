@@ -174,13 +174,13 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                     if line.is_added:
                         tem = re.sub("\+\s+", "", str(line))
                         added_line = tem.strip('\n')
-                        # Eample: + <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> The line number is 5 and in the list index is 0
+                        # Example: + <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> The line number is 5 and in the list index is 0
                         added.append(added_line)
                         add_line_number += 1
                 
                 warning_line_number.append(add_line_number) # First add line in diff file is line number 1
                 warning.append(str(h)) # This line is + <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> and the index is 0 in warning list.
-                             # Ths is warning.
+                             # Ths is warning example.
                              #     @@ -125,7 +125,7 @@ 
                              #  			<Name/>    
                              #  		</TabPreferences> 
@@ -277,28 +277,32 @@ def jira_ticket(username, passwd, ticket):
     issue = oempri.OEMPRI('jahuang', 'EhhBNR$&33', 'OEMPRI-25143') # username, password, jira ticket
     issue = oempri.OEMPRI(username, passwd, ticket) # username, password, jira ticket
     
-    # Getting output file from JIRA ticket
+    # -----Getting output file folder from JIRA ticket----- #
     for i in issue.fields['Review-Notes'].split('\n'):
         if 'Package' in i:
-            package = i
+            package = i # Diff: \\\\jasmine2\\Projects-1\\Engineering\\Firmware\\Work\\jerliao\\WP76_Customer\\WP7611-1\\1105082_Qualified_OEMPRI-25143\\Diffs\r
+            print(repr(package)) # Package: \\\\jasmine2\\Projects-1\\Engineering\\Firmware\\Work\\jerliao\\WP76_Customer\\WP7611-1\\1105082_Qualified_OEMPRI-25143\\1105082_9911219_WP7611-1_02.37.03.00_00_Qualified_001.000_000\r
         if 'Diff' in i:
             diff = i
+            print(repr(diff))
         if 'Spreadsheet' in i:
             spreadsheet = i
+            print(repr(spreadsheet)) # Spreadsheet: \\\\jasmine2\\Projects-1\\Engineering\\Firmware\\Work\\jerliao\\WP76_Customer\\WP7611-1\\1105082_Qualified_OEMPRI-25143\\1105082_WP7611-1_Qualified.xlsm\r
     
-    folder_xml_all = package.strip("Package: ").replace('\r','') #
+    # output file folder
+    folder_xml_all = package.strip("Package: ").replace('\r','') # 
     folder_diff = diff.strip("Diff: ").replace('\r','') # 
     spreadsheet = spreadsheet.strip("Spreadsheet: ").replace('\r','') #
     
-    tem = spreadsheet.split('\\')[-1]
-    end = tem.find('.')
-    target_file_name = tem[:end]
+    tem = spreadsheet.split('\\')[-1] # tem example: 1105082_WP7611-1_Qualified.xlsm
+    before_file_type = tem.find('.') # How many character in tem example before file type(xlsm)
+    target_file_name = tem[:before_file_type] # So, the target is 1105082_WP7611-1_Qualified
     
-    xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml"
-    
+    # output file path
+    xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml" # file folder + file name + file type
     diff_file_path = folder_diff + "\\" + "Differences-" + target_file_name + ".xml.diff"
     
-    # Getting input file from JIRA ticket
+    # -----Getting input file from JIRA ticket---- #
     for j in issue.list_attachment():
         if ".xls" in j:
             input_file = j
@@ -307,30 +311,84 @@ def jira_ticket(username, passwd, ticket):
     excel_info(input_file_path, xml_file_path)
     excel_info(input_file_path, diff_file_path)
     os.remove(SCRIPT_REAL_PATH + '\\' + input_file)
-    logging.shutdown()
-    issue.add_attachment(SCRIPT_REAL_PATH + '\\' + 'test.log')
+    logging.shutdown() # close logging
+    
+    issue.add_attachment(SCRIPT_REAL_PATH + '\\' + 'test.log') # upload to JIRA log file
     with open(SCRIPT_REAL_PATH + '\\' + 'test.log') as f: # open log file for uploading log to JIRA comment
         content = f.read()
     f.close() # close log file
+
     issue.add_comment("{noformat}\n" + content + "\n{noformat}") # upload to JIRA log file
+
+# -------------------------------------------------------------------------------------------------------------------- #
+# Read excel file for getting value through pandas because win32com module can not use in linux
+# -------------------------------------------------------------------------------------------------------------------- #
+
+def pandas_parser_excel_info(xlsm_path, xml_path):
+    
+    df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False) # keep_default_na=False
+    search_key = []
+    search_value = []
+    Carriers_PRI_Files_value = []
+    
+    # Get Filed and value from excel
+    i = 0
+    while(i < int(df.shape[0])):
+        if df[df.columns[0]][i] == 'Carriers PRI Files':
+            j = i
+            search_key.append(df[df.columns[0]][i])
+            while (j < int(df.shape[0]) - 1):
+                if df[df.columns[1]][j] != '':
+                    Carriers_PRI_Files_value.append(df[df.columns[1]][j])
+                j += 1
+            search_value.append(Carriers_PRI_Files_value)
+            i = j
+        elif (df[df.columns[0]][i] == '' and df[df.columns[1]][i] == ''):
+            i += 1
+        else:
+            search_key.append(df[df.columns[0]][i])
+            search_value.append(df[df.columns[1]][i])
+            i += 1
+    
+    # Compare xml
+    result = parse_xml_info(xml_path, search_key, search_value)
+    logging.info("==========")
+    logging.info("< "+result+" >")
+    logging.info("==========")
+    print(result)
+    print("End find excel")
 
 # -------------------------------------------------------------------------------------------------------------------- #
 
 # -------------------------------------------------------------------------------------------------------------------- #
 def main():
-    # Parser Function # This needed to modify based on the requirement
-    # parser = argparse.ArgumentParser(description='pri_compare', formatter_class=argparse.RawTextHelpFormatter)
-
-    # parser.add_argument('-i', '--input', metavar="</dir|.xlsm>", required=True)
-    # parser.add_argument('-o', '--output', metavar="</dir|.xml|.diff>", required=True)
-    # parser.add_argument('-l', '--log_file', metavar="</dir>", required=True)
-    
-    # args = parser.parse_args()
-    # logging.basicConfig(filename=args.log_file+"\\test_output_"+args.output.split('\\')[-1].split('.')[0]+".log", filemode="w", format="%(asctime)s %(levelname)s:%(message)s", datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
-
-    # excel_info(args.input, args.output)
     logging.basicConfig(filename=SCRIPT_REAL_PATH + '\\' + 'test.log', filemode="w",format='%(asctime)s %(levelname)-5s: %(message)s', datefmt='%Y-%m-%d_%H:%M:%S', level=logging.DEBUG)
-    jira_ticket('jahuang', 'EhhBNR$&33', 'OEMPRI-25143')
+    # Parser Function # This needed to modify based on the requirement
+    parser = argparse.ArgumentParser(description='pri_compare', formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-j', '--jira', metavar="<OEMPRI-XXX>", help="JIRA ticket", required=True)
+    parser.add_argument('-u', '--user', metavar="<username>", help="JIRA account")
+    parser.add_argument('-p', '--pwd', metavar="<password>", help="JIRA account")
+    args = parser.parse_args()
+
+    # check for jira
+    if args.jira is not None:
+        number = re.compile("^\d+$")
+        if re.search(number, str(args.jira)):
+            args.jira = "OEMPRI-%s" % args.jira
+        else:
+            if not re.search("OEMPRI-", str(args.jira)):
+                logging.error("JIRA ticket is not correct (expected: OEMPRI-XXX): %s" % args.jira)
+                raise ValueError
+    
+    # check username and password if not passed into script
+    if args.user is None or args.pwd is None:
+        args.user, args.pwd = common.get_reg_credentials()
+        if args.user is None or args.pwd is None:
+            logging.error("Registry key not set for user/pwd")
+            raise ValueError
+    # Start to get input and output file
+    jira_ticket(args.user, args.pwd, args.jira)
 
 if __name__ == "__main__":
     main()
