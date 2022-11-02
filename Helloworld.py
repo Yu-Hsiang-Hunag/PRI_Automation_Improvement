@@ -26,7 +26,7 @@ try:
 except:
     print("common folder or oempri is not exsiting")
 try:
-    import common.common
+    from common import common
 except:
     print("common folder or common is not exsiting")
 
