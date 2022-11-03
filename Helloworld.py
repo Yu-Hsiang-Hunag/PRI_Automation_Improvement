@@ -313,10 +313,11 @@ def jira_ticket(username, passwd, ticket):
     before_file_type = tem.find('.') # How many character in tem example before file type(xlsm)
     target_file_name = tem[:before_file_type] # So, the target is 1105082_WP7611-1_Qualified
     
-    # output file path
-    xml_file_path = folder_xml_all + "/" + target_file_name + ".xml" # file folder + file name + file type
-    diff_file_path = folder_diff + "/" + "Differences-" + target_file_name + ".xml.diff"
-    
+    # output file path (This should make sure we can connect to jasmine2)
+    # xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml" # file folder + file name + file type
+    # diff_file_path = folder_diff + "\\" + "Differences-" + target_file_name + ".xml.diff"
+    xml_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/input.xml")
+    diff_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/output.xml.diff")
     # -----Getting input file from JIRA ticket---- #
     for j in issue.list_attachment():
         if ".xls" in j:
@@ -342,7 +343,7 @@ def jira_ticket(username, passwd, ticket):
 
 def pandas_parser_excel_info(xlsm_path, output_path):
     
-    df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False) # keep_default_na=False
+    df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False, engine='openpyxl') # keep_default_na=False
     search_Field = []
     search_value = []
     Carriers_PRI_Files_value = []
