@@ -33,7 +33,8 @@ except:
 try:
     import pandas
 except:
-    print("Please install pandas")
+    logging.error("Please Install pandas")
+    raise ImportError
 
 # custom libraries #
 # from common import excel
@@ -44,10 +45,44 @@ SCRIPT_REAL_PATH = os.path.dirname(os.path.realpath(__file__))
 print("Import Success")
 print("Hello World")
 
-# -------------------------------------------------------------------------------------------------------------------- #
 
+def pandas_parser_excel_info(xlsm_path, xml_path):
+    
+    df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False) # keep_default_na=False
+    search_key = []
+    search_value = []
+    Carriers_PRI_Files_value = []
+    
+    # Get Filed and value from excel
+    i = 0
+    while(i < int(df.shape[0])):
+        if df[df.columns[0]][i] == 'Carriers PRI Files':
+            j = i
+            search_key.append(df[df.columns[0]][i])
+            while (j < int(df.shape[0]) - 1):
+                if df[df.columns[1]][j] != '':
+                    Carriers_PRI_Files_value.append(df[df.columns[1]][j])
+                j += 1
+            search_value.append(Carriers_PRI_Files_value)
+            i = j
+        elif (df[df.columns[0]][i] == '' and df[df.columns[1]][i] == ''):
+            i += 1
+        else:
+            search_key.append(df[df.columns[0]][i])
+            search_value.append(df[df.columns[1]][i])
+            i += 1
+    
+    # Compare xml
+    result = parse_xml_info(xml_path, search_key, search_value)
+    logging.info("==========")
+    logging.info("< "+result+" >")
+    logging.info("==========")
+    print(result)
+    print("End find excel")
 # -------------------------------------------------------------------------------------------------------------------- #
 # Read xml for checking the value existing
+# -------------------------------------------------------------------------------------------------------------------- #
+
 def compare_to_xml_info(xml_path, s_key, s_val):
     # xml file parser function --> ET.parse(xml_path), tree.getroot()  --> get the xml info
     tree = ET.parse(xml_path)
@@ -254,7 +289,7 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
 
 def jira_ticket(username, passwd, ticket):
 
-    issue = oempri.OEMPRI('jahuang', 'EhhBNR$&33', 'OEMPRI-25143') # username, password, jira ticket
+    # issue = oempri.OEMPRI('jahuang', 'EhhBNR$&33', 'OEMPRI-25143') # username, password, jira ticket
     issue = oempri.OEMPRI(username, passwd, ticket) # username, password, jira ticket
     
     # -----Getting output file folder from JIRA ticket----- #
@@ -288,26 +323,27 @@ def jira_ticket(username, passwd, ticket):
             input_file = j
             issue.get_attachment(j, SCRIPT_REAL_PATH)
     input_file_path = SCRIPT_REAL_PATH + '\\' + input_file
-    excel_info(input_file_path, xml_file_path)
-    excel_info(input_file_path, diff_file_path)
+    pandas_parser_excel_info(input_file_path, xml_file_path)
+    pandas_parser_excel_info(input_file_path, diff_file_path)
     os.remove(SCRIPT_REAL_PATH + '\\' + input_file)
     logging.shutdown() # close logging
     
-    issue.add_attachment(SCRIPT_REAL_PATH + '\\' + 'test.log') # upload to JIRA log file
-    with open(SCRIPT_REAL_PATH + '\\' + 'test.log') as f: # open log file for uploading log to JIRA comment
-        content = f.read()
-    f.close() # close log file
+    # Upload to JIRA ticket
+    # issue.add_attachment(SCRIPT_REAL_PATH + '\\' + 'test.log') # upload to JIRA log file
+    # with open(SCRIPT_REAL_PATH + '\\' + 'test.log') as f: # open log file for uploading log to JIRA comment
+    #     content = f.read()
+    # f.close() # close log file
 
-    issue.add_comment("{noformat}\n" + content + "\n{noformat}") # upload to JIRA log file
+    # issue.add_comment("{noformat}\n" + content + "\n{noformat}") # upload to JIRA log file
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # Read excel file for getting value through pandas because win32com module can not use in linux
 # -------------------------------------------------------------------------------------------------------------------- #
 
-def pandas_parser_excel_info(xlsm_path, xml_path):
+def pandas_parser_excel_info(xlsm_path, output_path):
     
     df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False) # keep_default_na=False
-    search_key = []
+    search_Field = []
     search_value = []
     Carriers_PRI_Files_value = []
     
@@ -316,7 +352,7 @@ def pandas_parser_excel_info(xlsm_path, xml_path):
     while(i < int(df.shape[0])):
         if df[df.columns[0]][i] == 'Carriers PRI Files':
             j = i
-            search_key.append(df[df.columns[0]][i])
+            search_Field.append(df[df.columns[0]][i])
             while (j < int(df.shape[0]) - 1):
                 if df[df.columns[1]][j] != '':
                     Carriers_PRI_Files_value.append(df[df.columns[1]][j])
@@ -326,17 +362,17 @@ def pandas_parser_excel_info(xlsm_path, xml_path):
         elif (df[df.columns[0]][i] == '' and df[df.columns[1]][i] == ''):
             i += 1
         else:
-            search_key.append(df[df.columns[0]][i])
+            search_Field.append(df[df.columns[0]][i])
             search_value.append(df[df.columns[1]][i])
             i += 1
     
-    # Compare xml
-    result = parse_xml_info(xml_path, search_key, search_value)
-    logging.info("==========")
-    logging.info("< "+result+" >")
-    logging.info("==========")
-    print(result)
-    print("End find excel")
+    if '.diff' in output_path: # diff file compare
+        print("This is diff compare")
+        compare_to_diff_file_info(output_path, search_Field, search_value)
+    else:
+        print("This is XML compare") # xml file compare
+        compare_to_xml_info(output_path, search_Field, search_value)
+   
 
 # -------------------------------------------------------------------------------------------------------------------- #
 
@@ -351,22 +387,6 @@ def main():
     parser.add_argument('-p', '--pwd', metavar="<password>", help="JIRA account")
     args = parser.parse_args()
 
-    # check for jira
-    if args.jira is not None:
-        number = re.compile("^\d+$")
-        if re.search(number, str(args.jira)):
-            args.jira = "OEMPRI-%s" % args.jira
-        else:
-            if not re.search("OEMPRI-", str(args.jira)):
-                logging.error("JIRA ticket is not correct (expected: OEMPRI-XXX): %s" % args.jira)
-                raise ValueError
-    
-    # check username and password if not passed into script
-    if args.user is None or args.pwd is None:
-        args.user, args.pwd = common.get_reg_credentials()
-        if args.user is None or args.pwd is None:
-            logging.error("Registry key not set for user/pwd")
-            raise ValueError
     # Start to get input and output file
     jira_ticket(args.user, args.pwd, args.jira)
 
