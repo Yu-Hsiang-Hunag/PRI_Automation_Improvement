@@ -314,18 +314,18 @@ def jira_ticket(username, passwd, ticket):
     target_file_name = tem[:before_file_type] # So, the target is 1105082_WP7611-1_Qualified
     
     # output file path
-    xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml" # file folder + file name + file type
-    diff_file_path = folder_diff + "\\" + "Differences-" + target_file_name + ".xml.diff"
+    xml_file_path = folder_xml_all + "/" + target_file_name + ".xml" # file folder + file name + file type
+    diff_file_path = folder_diff + "/" + "Differences-" + target_file_name + ".xml.diff"
     
     # -----Getting input file from JIRA ticket---- #
     for j in issue.list_attachment():
         if ".xls" in j:
             input_file = j
             issue.get_attachment(j, SCRIPT_REAL_PATH)
-    input_file_path = SCRIPT_REAL_PATH + '\\' + input_file
+    input_file_path = SCRIPT_REAL_PATH + '/' + input_file
     pandas_parser_excel_info(input_file_path, xml_file_path)
     pandas_parser_excel_info(input_file_path, diff_file_path)
-    os.remove(SCRIPT_REAL_PATH + '\\' + input_file)
+    os.remove(SCRIPT_REAL_PATH + '/' + input_file)
     logging.shutdown() # close logging
     
     # Upload to JIRA ticket
@@ -378,13 +378,13 @@ def pandas_parser_excel_info(xlsm_path, output_path):
 
 # -------------------------------------------------------------------------------------------------------------------- #
 def main():
-    logging.basicConfig(filename=SCRIPT_REAL_PATH + '\\' + 'test.log', filemode="w",format='%(asctime)s %(levelname)-5s: %(message)s', datefmt='%Y-%m-%d_%H:%M:%S', level=logging.DEBUG)
+    logging.basicConfig(filename=SCRIPT_REAL_PATH + '/' + 'test.log', filemode="w",format='%(asctime)s %(levelname)-5s: %(message)s', datefmt='%Y-%m-%d_%H:%M:%S', level=logging.DEBUG)
     # Parser Function # This needed to modify based on the requirement
     parser = argparse.ArgumentParser(description='pri_compare', formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-j', '--jira', metavar="<OEMPRI-XXX>", help="JIRA ticket", required=True)
-    parser.add_argument('-u', '--user', metavar="<username>", help="JIRA account")
-    parser.add_argument('-p', '--pwd', metavar="<password>", help="JIRA account")
+    parser.add_argument('-u', '--user', metavar="<username>", help="JIRA account", required=True)
+    parser.add_argument('-p', '--pwd', metavar="<password>", help="JIRA account", required=True)
     args = parser.parse_args()
 
     # Start to get input and output file
