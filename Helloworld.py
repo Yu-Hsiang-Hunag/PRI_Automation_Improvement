@@ -317,7 +317,7 @@ def jira_ticket(username, passwd, ticket):
     # xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml" # file folder + file name + file type
     # diff_file_path = folder_diff + "\\" + "Differences-" + target_file_name + ".xml.diff"
     xml_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/input.xml")
-    diff_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/output.xml.diff")
+    diff_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/outputfile.xml.diff")
     # -----Getting input file from JIRA ticket---- #
     for j in issue.list_attachment():
         if ".xls" in j:
