@@ -241,7 +241,7 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                     logging.info("---------------NEXT TARGET---------------")
         else: # If Field is not PRI Carrier File.
             logging.info("Field: "+ s_key[i])
-            logging.info("Target: "+ s_val[i])
+            logging.info("Target: "+ str(s_val[i]))
             for k in range(len(added)):
                 start = added[k].find('>')
                 end = added[k].find('<',start)
