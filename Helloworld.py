@@ -245,7 +245,7 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
             for k in range(len(added)):
                 start = added[k].find('>')
                 end = added[k].find('<',start)
-                if s_val[i] in str(added[k][start+1:end]):
+                if str(s_val[i]) in str(added[k][start+1:end]):
                     logging.debug("Target in diff file: " + added[k])
                     if k not in added_index:
                         added_index.append(k)
