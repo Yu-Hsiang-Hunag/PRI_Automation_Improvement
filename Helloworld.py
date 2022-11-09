@@ -45,46 +45,11 @@ SCRIPT_REAL_PATH = os.path.dirname(os.path.realpath(__file__))
 print("Import Success")
 print("Hello World")
 
-
-def pandas_parser_excel_info(xlsm_path, xml_path):
-    
-    df = pandas.read_excel(xlsm_path, usecols=[0,1], keep_default_na=False) # keep_default_na=False
-    search_key = []
-    search_value = []
-    Carriers_PRI_Files_value = []
-    
-    # Get Filed and value from excel
-    i = 0
-    while(i < int(df.shape[0])):
-        if df[df.columns[0]][i] == 'Carriers PRI Files':
-            j = i
-            search_key.append(df[df.columns[0]][i])
-            while (j < int(df.shape[0]) - 1):
-                if df[df.columns[1]][j] != '':
-                    Carriers_PRI_Files_value.append(df[df.columns[1]][j])
-                j += 1
-            search_value.append(Carriers_PRI_Files_value)
-            i = j
-        elif (df[df.columns[0]][i] == '' and df[df.columns[1]][i] == ''):
-            i += 1
-        else:
-            search_key.append(df[df.columns[0]][i])
-            search_value.append(df[df.columns[1]][i])
-            i += 1
-    
-    # Compare xml
-    result = parse_xml_info(xml_path, search_key, search_value)
-    logging.info("==========")
-    logging.info("< "+result+" >")
-    logging.info("==========")
-    print(result)
-    print("End find excel")
 # -------------------------------------------------------------------------------------------------------------------- #
-# Read xml for checking the value existing
+# Comparing input file and output file (xml file)(All)
 # -------------------------------------------------------------------------------------------------------------------- #
-
 def compare_to_xml_info(xml_path, s_key, s_val):
-    # xml file parser function --> ET.parse(xml_path), tree.getroot()  --> get the xml info
+    # -----xml file parser function --> ET.parse(xml_path), tree.getroot()  --> get the xml info----- #
     tree = ET.parse(xml_path)
     root = tree.getroot() 
     
@@ -95,7 +60,7 @@ def compare_to_xml_info(xml_path, s_key, s_val):
     i = 0
     j = 0 # Carrier PRI files --> using list to compare
 
-    # Checking times --> each value comparing whole xml once
+    # -----Checking times --> each value comparing whole xml once----- #
     while i < len(s_val):
         if type(s_val[i]) == list:
             if not s_val[i]:
@@ -107,7 +72,8 @@ def compare_to_xml_info(xml_path, s_key, s_val):
         else:
             logging.info("Filed: "+ s_key[i])
             logging.info("Target: "+ str(s_val[i]))
-        if s_val[i] is None:
+        print(s_val[i], type(s_val[i]))
+        if s_val[i] is None or s_val[i] == "":
             logging.info("PASSED")
             Pass.append("Value is None == passed")
         else:
@@ -126,7 +92,7 @@ def compare_to_xml_info(xml_path, s_key, s_val):
                 elif str(s_val[i]) in find.text:
                     logging.debug("Data in xml file: <tag> : <content> " + find.tag + " : " + find.text)
                     Pass.append(s_val[i])
-        # Checking value existing in xml info or not
+        # -----Checking value existing in xml info or not----- #
         if s_key[i] == 'Carriers PRI Files':
             # print(Pass, len(Pass))
             if len(Pass) == 0:
@@ -148,7 +114,7 @@ def compare_to_xml_info(xml_path, s_key, s_val):
                 Pass.clear()
                 i+=1
             logging.info("---------------NEXT TARGET---------------")
-    # Result of this process
+    # -----Result of this process----- #
     if result == False:
         logging.info("========================================")
         logging.info('XML file comparing result' + " : " + "< FAILED >")
@@ -158,30 +124,31 @@ def compare_to_xml_info(xml_path, s_key, s_val):
         logging.info('XML file comparing result' + " : " + "< PASSED >")
         logging.info("========================================\n\n")
 
-# -------------------------------------------------------------------------------------------------------------------- #
 
+# -------------------------------------------------------------------------------------------------------------------- #
+# Comparing input file and output file (diff file)
 # -------------------------------------------------------------------------------------------------------------------- #
 
 def compare_to_diff_file_info(diff_path, s_key, s_val):
-    # parameter, sample file: Differences-1105080_RC7620-1_TeleAlarm.xml.diff
+    # -----parameter, sample file: Differences-1105080_RC7620-1_TeleAlarm.xml.diff----- #
     added = [] # list to check which lines in diff file are added
     warning = [] # list to check which lines in diff file comparing to excel are not exsiting. Then, add the lines to this list
-    add_line_number = 0 # This means which lines in diff file are added. Example: This is first line: @@ -125,7 +125,7 @@ This line nubmer is 0. Detail is seen in following.
-    warning_line_number = [] # This means child that include added line. Example is following
+    added_line_number = 0 # added line number  This line nubmer is <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> 1. Detail is seen in following.
+    warning_line_number = [] # This means child that include added line. Example is following, for checking each section added line that can match input file
                              #     @@ -125,7 +125,7 @@ 
                              #  			<Name/>    
                              #  		</TabPreferences> 
                              #  		<NVUPPreferences> 
                              # -			<NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.000_000</NVUPVersion> 
-                             # +			<NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> # add_line_number 1
+                             # +			<NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> # added_line_number 1
                              #  			<NVUPLink/>   
                              #  		</NVUPPreferences> 
                              #  	</Prefs>
     warning_pass_index = [] # In warning list, which are matching added.
-    added_index = [] # In diff file, which lines are matching excel
+    added_pass_index = [] # In diff file, which lines are matching excel
 
     patches = PatchSet.from_filename(diff_path) 
-    # Getting the added line in diff file, then add to added list
+    # -----Getting the added line in diff file, then add to added list----- #
     for p in patches:
         if p.added > 0:
             for h in p:
@@ -191,9 +158,11 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                         added_line = tem.strip('\n')
                         # Example: + <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> The line number is 5 and in the list index is 0
                         added.append(added_line)
-                        add_line_number += 1
+                        # print("add line number {}".format(added_line_number))
+                        added_line_number += 1
                 
-                warning_line_number.append(add_line_number) # First add line in diff file is line number 1
+                warning_line_number.append(added_line_number) # First add line in diff file is line number 1
+                # print("This is warning_line_number {}".format(warning_line_number))
                 warning.append(str(h)) # This line is + <NVUPVersion>1105080_9911208_RC7620-1_00.08.07.00_00_TeleAlarm_001.001_000</NVUPVersion> and the index is 0 in warning list.
                              # Ths is warning example.
                              #     @@ -125,7 +125,7 @@ 
@@ -205,12 +174,10 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                              #  			<NVUPLink/>   
                              #  		</NVUPPreferences> 
                              #  	</Prefs>
-                
-    
-    
+    # -----Comparing input file and output file----- #            
     for i in range(len(s_key)):
         result = False # This is for checking the result, PASSED or FAILED
-        if s_val[i] is None:
+        if s_val[i] is None or s_val[i] == "": # pass Field' value is empty
             logging.info("Field: "+ s_key[i])
             logging.info("Target: "+ str(s_val[i]))
             logging.info("PASSED")
@@ -230,8 +197,8 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                     for j in range(len(added)):
                         if s_val[i][CarrierPRIFiles_index] in added[j]:
                             logging.debug("Target in diff file: " + added[j])
-                            if j not in added_index:
-                                added_index.append(j)
+                            if j not in added_pass_index:
+                                added_pass_index.append(j)
                             result = True
                     if result == True:
                         logging.info("PASSED")
@@ -247,8 +214,8 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                 end = added[k].find('<',start)
                 if str(s_val[i]) in str(added[k][start+1:end]):
                     logging.debug("Target in diff file: " + added[k])
-                    if k not in added_index:
-                        added_index.append(k)
+                    if k not in added_pass_index:
+                        added_pass_index.append(k)
                     result = True
             if result == True:
                 logging.info("PASSED")
@@ -256,11 +223,11 @@ def compare_to_diff_file_info(diff_path, s_key, s_val):
                 logging.info("Target in diff file is not found")
                 logging.info("FAILED")
             logging.info("---------------NEXT TARGET---------------")
-    
-    # Comparing which lines are
-    # m is added_index that means added line can match excel.
-    for m in added_index:
-        for n in warning_line_number: # n is warning_line_number that means warning line is if added_index < warning_line_number. warning will show.
+    # print("This is added_passed_index {}".format(added_pass_index))
+    # -----Comparing which lines are passed, other is warning for manual checking----- #
+    # m is added_pass_index that means added line can match excel.
+    for m in added_pass_index:
+        for n in warning_line_number: # n is warning_line_number that means warning line is if added_pass_index < warning_line_number. warning will show.
             if m < n:
                 if warning_line_number.index(n) not in warning_pass_index: # checking which lines are passed and then print not passed line child.
                     warning_pass_index.append(warning_line_number.index(n))
@@ -316,8 +283,8 @@ def jira_ticket(username, passwd, ticket):
     # output file path (This should make sure we can connect to jasmine2)
     # xml_file_path = folder_xml_all + "\\" + target_file_name + ".xml" # file folder + file name + file type
     # diff_file_path = folder_diff + "\\" + "Differences-" + target_file_name + ".xml.diff"
-    xml_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/outputfile.xml")
-    diff_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file/outputfile.xml.diff")
+    xml_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file\\outputfile.xml")
+    diff_file_path = os.path.join(SCRIPT_REAL_PATH, "test_file\\outputfile.xml.diff")
     # -----Getting input file from JIRA ticket---- #
     for j in issue.list_attachment():
         if ".xls" in j:
@@ -326,7 +293,7 @@ def jira_ticket(username, passwd, ticket):
     input_file_path = SCRIPT_REAL_PATH + '/' + input_file
     pandas_parser_excel_info(input_file_path, xml_file_path)
     pandas_parser_excel_info(input_file_path, diff_file_path)
-    os.remove(SCRIPT_REAL_PATH + '/' + input_file)
+    # os.remove(SCRIPT_REAL_PATH + '/' + input_file)
     logging.shutdown() # close logging
     
     # Upload to JIRA ticket
